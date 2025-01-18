@@ -1,13 +1,16 @@
 import React from 'react';
 import styles from "./Home.module.css";
 import { Link } from 'react-router-dom';
-import homeimg from "./home.webp"
+import homeimg from "./home.webp";
+import { AiOutlineLogin } from "react-icons/ai";
 const Home = () => {
   return (
     <div>
       <h1 className={styles.heading}>EchoSavvy</h1>
       <Link to="/login">
-        <button className={styles.login}>Login</button>
+        <button className={styles.login}>
+        <AiOutlineLogin />
+          Login</button>
       </Link>
       
       <div className={styles.content}>
