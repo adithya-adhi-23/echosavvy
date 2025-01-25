@@ -1,0 +1,99 @@
+ body {
+    font-family: 'Arial', sans-serif;
+    background-color: #fbfbfb; /* Dark background for a classy look */
+    color: #070707; /* Light text for contrast */
+    margin: 0;
+    padding: 20px;
+}
+
+.container {
+    max-width: 450px;
+    margin: auto;
+    padding: 30px;
+    background-color: #000000; /* Darker gray for the form */
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    transition: transform 0.3s;
+}
+
+.container:hover {
+    transform: scale(1.02); /* Slight zoom effect on hover */
+}
+
+.title {
+    text-align: center;
+    font-size: 28px;
+    margin-bottom: 20px;
+    color: #ffcc00; /* Gold color for the title */
+}
+
+.login-form {
+    display: flex;
+    flex-direction: column;
+}
+
+label {
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: #ffcc00; /* Gold color for labels */
+}
+
+.input-container {
+    margin-bottom: 15px;
+    border: 1px solid #ffcc00; /* Gold border for input boxes */
+    border-radius: 6px;
+    background-color: #131212; /* Slightly lighter gray for input background */
+    overflow: hidden; /* Ensures the border radius is applied */
+}
+
+input {
+    padding: 12px;
+    border: none; /* Remove default border */
+    width: 100%; /* Full width */
+    color: #0b0b0b; /* White text in inputs */
+    background-color: transparent; /* Transparent background to show the container */
+    font-size: 16px; /* Font size for inputs */
+}
+
+input:focus {
+    outline: none;
+    border-color: #ff9900; /* Brighter gold on focus */
+}
+
+button {
+    padding: 12px;
+    background-color: #ffcc00; /* Gold button for contrast */
+    color: #040202; /* Black text on button */
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 18px;
+    transition: background-color 0.3s, transform 0.3s;
+}
+
+button:hover {
+    background-color: #e6b800; /* Darker gold on hover */
+    transform: translateY(-2px); /* Lift effect on hover */
+}
+
+.footer-text {
+    text-align: center;
+    margin-top: 20px;
+    font-size: 14px;
+}
+
+.footer-text a {
+    color: #ffcc00; /* Gold link for contrast */
+    text-decoration: none;
+    transition: text-decoration 0.3s;
+}
+
+.footer-text a:hover {
+    text-decoration: underline; /* Underline on hover for links */
+}
+
+.error-message {
+    color: red;
+    text-align: center;
+    margin-top: 20px;
+}  
