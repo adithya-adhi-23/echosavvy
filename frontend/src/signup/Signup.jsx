@@ -51,7 +51,7 @@ const Signup = () => {
     <div className={styles.mainContainer}>
             <h1 className={styles.pageHeading}>Echosavvy</h1>
       <div className={styles.formContainer}>
-      <h2>Signup now!</h2>
+      <h2>Signup</h2>
         <input
           type="text"
           required
