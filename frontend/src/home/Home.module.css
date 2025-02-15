@@ -98,3 +98,16 @@ div {
   font-style: italic;
   color: #f39c12; /* Match yellow theme */
 }
+.replayButton {
+  margin-top: 10px;
+  padding: 8px 12px;
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.3s;
+}
+
+

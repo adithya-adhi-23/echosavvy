@@ -27,6 +27,7 @@ body {
   color: #f39c12;
   font-weight: bold;
   margin-bottom: 20px;
+  text-decoration: none;
 }
 
 .formContainer {
@@ -96,5 +97,5 @@ input:focus {
 }
 
 .link:hover {
-  color: #f35c1b;
+  color: #f45612;
 }

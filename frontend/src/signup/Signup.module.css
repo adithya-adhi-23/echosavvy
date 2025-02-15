@@ -3,7 +3,7 @@
 body {
   margin: 0;
   font-family: 'Josefin Sans', serif;
-  background-color: #fff;
+  background-color: #fcfcfc;
   color: #333;
   display: flex;
   justify-content: center;
@@ -75,6 +75,12 @@ input:focus {
   background-color: #f35c1b;
 }
 
+.submitButton:disabled {
+  background-color: #e5e5e5;
+  color: #aaa;
+  cursor: not-allowed;
+}
+
 .errorMessage {
   color: red;
   font-size: 0.9rem;
@@ -90,5 +96,5 @@ input:focus {
 }
 
 .link:hover {
-  color: #f35c1b;
+  color: #f45612;
 }
