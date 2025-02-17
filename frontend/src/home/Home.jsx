@@ -7,21 +7,33 @@ import { AiOutlineLogin } from "react-icons/ai";
 const Home = () => {
   const elementsRef = useRef([]);
 
-  // Function to initialize speech synthesis
+  
   const speakText = (text) => {
     if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel(); // Stop any ongoing speech
+      window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = 'en-US';
-      utterance.rate = 1.6;
+      utterance.rate = 1.2;
       utterance.pitch = 1;
+
+      const voices = window.speechSynthesis.getVoices();
+      const femaleVoice = voices.find(voice => 
+        voice.name.includes('Female') || 
+        voice.name.includes('Samantha') || 
+        voice.name.includes('Google UK English Female')
+      );
+
+      if (femaleVoice) {
+        utterance.voice = femaleVoice;
+      }
+
       window.speechSynthesis.speak(utterance);
     } else {
       console.error('Speech Synthesis API is not supported in this browser.');
     }
   };
 
-  // Function to handle focus and read the element's content
+ 
   const handleFocus = (index) => {
     const element = elementsRef.current[index];
     if (element) {
@@ -30,26 +42,41 @@ const Home = () => {
     }
   };
 
-  // Assign focus events to interactive elements
+  
+  const handleMouseEnter = (event) => {
+    const text = event.target.getAttribute('aria-label') || event.target.textContent || '';
+    speakText(text.trim());
+  };
+
+  
   useEffect(() => {
     elementsRef.current = Array.from(document.querySelectorAll('[data-focusable="true"]'));
+
     elementsRef.current.forEach((element, index) => {
       element.addEventListener('focus', () => handleFocus(index));
+      element.addEventListener('mouseenter', handleMouseEnter);
     });
 
-    // Cleanup listeners on unmount
+   
     return () => {
-      elementsRef.current.forEach((element) => {
+      elementsRef.current.forEach((element, index) => {
         element.removeEventListener('focus', () => handleFocus(index));
+        element.removeEventListener('mouseenter', handleMouseEnter);
       });
     };
   }, []);
 
   return (
     <div>
-      <h1 className={styles.heading} tabIndex="0" aria-label="EchoSavvy: Home Page">
+      <h1 
+        className={styles.heading} 
+        tabIndex="0" 
+        data-focusable="true" 
+        aria-label="EchoSavvy: Home Page"
+      >
         EchoSavvy
       </h1>
+
       <Link to="/login">
         <button
           className={styles.login}
@@ -71,6 +98,7 @@ const Home = () => {
         >
           Welcome to EchoSavvy! We are an e-commerce platform designed to empower and assist visually impaired users. Our platform prioritizes accessibility, usability, and inclusivity to ensure a seamless shopping experience for everyone.
         </p>
+        
         <img
           className={styles.homeimg}
           src={homeimg}
@@ -82,10 +110,21 @@ const Home = () => {
       </div>
 
       <div className={styles.session}>
-        <p className={styles.copy} tabIndex="0" data-focusable="true" aria-label="Copyright 2025 EchoSavvy. All rights reserved.">
+        <p 
+          className={styles.copy} 
+          tabIndex="0" 
+          data-focusable="true" 
+          aria-label="Copyright 2025 EchoSavvy. All rights reserved."
+        >
           &copy; 2025 EchoSavvy. All rights reserved.
         </p>
-        <p className={styles.support} tabIndex="0" data-focusable="true" aria-label="For support, contact echosavvy@gmail.com">
+        
+        <p 
+          className={styles.support} 
+          tabIndex="0" 
+          data-focusable="true" 
+          aria-label="For support, contact echosavvy@gmail.com"
+        >
           For support: echosavvy@gmail.com
         </p>
       </div>

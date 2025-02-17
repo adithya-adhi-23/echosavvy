@@ -54,13 +54,13 @@ const Login = () => {
       }));
 
       speakText(`You entered: ${transcript}`);
-      setRecognitionRunning(false); // Reset recognition state
+      setRecognitionRunning(false);
     };
 
     recognition.onerror = (event) => {
       console.error('Speech recognition error:', event.error);
       speakText('Voice input failed. Please try again.');
-      setRecognitionRunning(false); // Reset recognition state
+      setRecognitionRunning(false);
     };
 
     recognitionRef.current = recognition;
@@ -83,7 +83,6 @@ const Login = () => {
           const transcript = event.results[0][0].transcript.trim();
           console.log(`Recognized speech: ${transcript}`);
   
-          // Set data using the provided field, instead of state variable
           setUserData((prev) => ({
             ...prev,
             [field]: transcript, 
@@ -99,7 +98,7 @@ const Login = () => {
     }, 500);
   };
   
-  const handleButtonFocus = (message) => {
+  const handleMouseHover = (message) => {
     speakText(message);
   };
 
@@ -112,7 +111,7 @@ const Login = () => {
     setLoading(true);
     setErrorMessage('');
     
-    console.log("Sending login request with:", userData); // Debugging log
+    console.log("Sending login request with:", userData);
 
     try {
         const response = await axios.post('http://localhost:8082/login', { 
@@ -120,7 +119,7 @@ const Login = () => {
             password: userData.password 
         });
 
-        console.log("Server response:", response.data); // Debugging log
+        console.log("Server response:", response.data);
 
         if (response?.data?.success) {
             localStorage.setItem('user', JSON.stringify(response.data.user));
@@ -131,7 +130,7 @@ const Login = () => {
             speakText(errorMsg);
         }
     } catch (error) {
-        console.error("Login error:", error.response?.data || error.message); // Debugging log
+        console.error("Login error:", error.response?.data || error.message);
 
         const errorMsg = error.response?.data?.message || 'An error occurred. Try again.';
         setErrorMessage(errorMsg);
@@ -139,14 +138,14 @@ const Login = () => {
     } finally {
         setLoading(false);
     }
-};
-
+  };
 
   return (
     <div className={styles.mainContainer}>
-      <h1 className={styles.pageHeading}>Echosavvy</h1>
+      <h1 className={styles.pageHeading} onMouseEnter={() => handleMouseHover("Welcome to EchoSavvy login page")}>Echosavvy</h1>
+      
       <div className={styles.formContainer}>
-        <h2>Login</h2>
+        <h2 onMouseEnter={() => handleMouseHover("Login")}>Login</h2>
         
         <input
           type="text"
@@ -155,6 +154,7 @@ const Login = () => {
           value={userData.username}
           onFocus={() => handleFieldFocus('username')}
           onChange={(e) => setUserData({ ...userData, username: e.target.value })}
+          onMouseEnter={() => handleMouseHover("Enter your username")}
           className={styles.userPhoneInput}
         />
 
@@ -165,10 +165,11 @@ const Login = () => {
           value={userData.password}
           onFocus={() => handleFieldFocus('password')}
           onChange={(e) => setUserData({ ...userData, password: e.target.value })}
+          onMouseEnter={() => handleMouseHover("Enter your password")}
           className={styles.userPasswordInput}
         />
 
-        {errorMessage && <p className={styles.errorMessage}>{errorMessage}</p>}
+        {errorMessage && <p className={styles.errorMessage} onMouseEnter={() => handleMouseHover(errorMessage)}>{errorMessage}</p>}
 
         <button
           className={styles.submitButton}
@@ -176,7 +177,8 @@ const Login = () => {
             confirmDetails();
             loginUser();
           }}
-          onFocus={() => handleButtonFocus('Press this button to log in.')}
+          onFocus={() => handleMouseHover('Press this button to log in')}
+          onMouseEnter={() => handleMouseHover("Click to login")}
           disabled={loading}
         >
           {loading ? 'Logging in...' : 'Login'}
@@ -184,7 +186,8 @@ const Login = () => {
 
         <Link
           to="/signup"
-          onFocus={() => handleButtonFocus('Go to Signup Page')}
+          onFocus={() => handleMouseHover('Go to Signup Page')}
+          onMouseEnter={() => handleMouseHover("Click here to sign up")}
         >
           <p className={styles.link}>Don't Have An Account? Signup now!</p>
         </Link>

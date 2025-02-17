@@ -55,13 +55,21 @@ const Signup = () => {
     if ('speechSynthesis' in window) {
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = 'en-US';
-      utterance.rate = 1.2;
+      utterance.rate = 1;
       utterance.pitch = 1;
+  
+      const voices = window.speechSynthesis.getVoices();
+      const femaleVoice = voices.find(voice => voice.name.includes('Female') || voice.name.includes('Samantha') || voice.name.includes('Google UK English Female'));
+  
+      if (femaleVoice) {
+        utterance.voice = femaleVoice;
+      }
+  
       window.speechSynthesis.cancel();
       window.speechSynthesis.speak(utterance);
     }
   };
-
+  
   // Handle field focus
   const handleFieldFocus = (field, message) => {
     setCurrentField(field);
@@ -123,7 +131,13 @@ const Signup = () => {
 
   return (
     <div className={styles.mainContainer}>
-      <h1 className={styles.pageHeading}>Echosavvy</h1>
+      <h1 
+  className={styles.pageHeading} 
+  onMouseEnter={() => handleMouseHover('Welcome to Echosavvy sign up page.')}
+>
+  Echosavvy
+</h1>
+
 
       <div className={styles.formContainer}>
         <h2>Signup</h2>
