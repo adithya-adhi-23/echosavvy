@@ -12,7 +12,7 @@ const products = [
   { id: 5, name: "Wireless Headphones", category: "Audio", price: "$149.99", description: "Noise-canceling headphones with superior sound quality.", image: "src/image/wirelessheadphones.jpg" },
   { id: 6, name: "Bluetooth Speaker", category: "Audio", price: "$89.99", description: "Portable speaker with rich sound and long battery life.", image: "src/image/speak.webp" },
   { id: 7, name: "Digital Camera", category: "Cameras", price: "$499.99", description: "High-quality camera for stunning photography.", image: "src/image/cam.png"},
-  { id: 8, name: "Gaming Console", category: "Gaming", price: "$399.99", description: "Next-gen gaming console with immersive graphics and exclusive games.", image: "src/image/con.webp"},
+  { id: 8, name: "Gaming Console", category: "Gaming", price: "$399.99", description: "Next-gen gaming console with immersive graphics and exclusive games.", image: "src/image/console.webp"},
   { id: 9, name: "E-Reader", category: "E-Readers", price: "$129.99", description: "Lightweight e-reader with a glare-free display for reading anywhere.", image: "src/image/epaper.png"},
   { id: 10, name: "Drone", category: "Drones", price: "$299.99", description: "High-performance drone with HD camera and long flight time.", image: "src/image/drone.jpeg" },
   { id: 11, name: "Monitor", category: "Computers", price: "$249.99", description: "27-inch 4K monitor with vibrant colors and sharp details.", image: "src/image/monitor1.jpg"},
@@ -64,7 +64,8 @@ const Products = () => {
       </div>
       
       {/* Display Products */}
-      <div className={styles.productGrid}>
+     <div className={styles.productsDisp}>
+     <div className={styles.productGrid}>
         {filteredProducts.length > 0 ? (
           filteredProducts.map((product) => (
             <div key={product.id} className={styles.productCard}>
@@ -80,6 +81,7 @@ const Products = () => {
           <p className={styles.noResults}>No products found.</p>
         )}
       </div>
+     </div>
     </main>
   );
 };
