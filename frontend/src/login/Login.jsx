@@ -14,12 +14,11 @@ const Login = () => {
   const synthRef = useRef(window.speechSynthesis);
   const navigate = useNavigate();
 
-  // Function to speak text
   const speakText = (text) => {
     if (!synthRef.current) return;
     synthRef.current.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'en-US';
+    utterance.lang = 'en-IN';
     utterance.rate = 1;
     utterance.pitch = 1.2;
     utterance.voice = synthRef.current.getVoices().find(voice => voice.name.includes("Google UK English Female")) || synthRef.current.getVoices()[0];
