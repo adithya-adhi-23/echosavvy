@@ -1,8 +1,8 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { TiShoppingCart } from "react-icons/ti";
 import { IoHome } from "react-icons/io5"; 
+import { HiMicrophone } from "react-icons/hi2";
 import styles from "./Products.module.css";
 
 const products = [
@@ -27,126 +27,119 @@ const products = [
   { id: 19, name: "VR Headset", category: "Gaming", price: "$299.99", description: "Immersive VR headset for gaming and entertainment.", image: "/image/vrhead.webp" },
 ];
 
-
 const Products = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredProducts, setFilteredProducts] = useState(products);
+  const [isListening, setIsListening] = useState(false);
   const synthRef = useRef(window.speechSynthesis);
+  const recognitionRef = useRef(null);
 
   useEffect(() => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = false;
+      recognitionRef.current.lang = "en-US";
+      recognitionRef.current.interimResults = false;
+      recognitionRef.current.onresult = handleSpeechResult;
+      recognitionRef.current.onerror = handleSpeechError;
+    } else {
+      console.warn("Speech recognition not supported.");
+    }
+  
+    synthRef.current.onvoiceschanged = () => synthRef.current.getVoices();
+  
     return () => {
-      synthRef.current.cancel();
+      if (recognitionRef.current) recognitionRef.current.stop();
+      if (synthRef.current) synthRef.current.cancel(); // Stop ongoing speech when unmounting
     };
   }, []);
+  
+
+  const handleSpeechResult = (event) => {
+    const transcript = event.results[0][0].transcript;
+    setSearchTerm(transcript);
+    handleSearch({ target: { value: transcript } });
+    setIsListening(false);
+  };
+
+  const handleSpeechError = () => {
+    setIsListening(false);
+    speakText("Sorry, I couldn't understand you. Please try again.");
+  };
+
+  const startVoiceSearch = () => {
+    if (recognitionRef.current) {
+      synthRef.current.cancel(); // Stop any ongoing speech before starting recognition
+      recognitionRef.current.start();
+      setIsListening(true);
+      speakText("Listening...");
+    }
+  };
+  
 
   const speakText = (text) => {
     if (!synthRef.current) return;
     synthRef.current.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = "en-IN"; // Set language to Indian English
+    utterance.lang = "en-IN";
     utterance.rate = 1;
     utterance.pitch = 1.2;
-    
-    // Select an Indian English voice
-    const voices = synthRef.current.getVoices();
-    utterance.voice = voices.find(voice => voice.lang === "en-IN") || voices[0];
-
     synthRef.current.speak(utterance);
-};
-
+  };
 
   const handleSearch = (e) => {
     const value = e.target.value.toLowerCase();
     setSearchTerm(value);
-    const filtered = products.filter((product) =>
-      product.name.toLowerCase().includes(value)
-    );
-    setFilteredProducts(filtered);
-  };
-
-  const announceHeading = () => {
-    speakText("Welcome to EchoSavvy products page");
-  };
-
-  const announceButton = (buttonName) => {
-    speakText(buttonName);
-  };
-
-  const announceProductDetails = (product) => {
-    speakText(
-      `${product.name}, Price: ${product.price}, Category: ${product.category}, Description: ${product.description}`
-    );
+    setFilteredProducts(value ? products.filter(p => p.name.toLowerCase().includes(value)) : products);
   };
 
   return (
     <main className={styles.productDisplay}>
       <div className={styles.topBar}>
-        <h1 className={styles.platformName} onMouseEnter={announceHeading}>
-          Echosavvy
-        </h1>
+        <h1 className={styles.platformName} onMouseEnter={() => speakText("Welcome to EchoSavvy products page")}>Echosavvy</h1>
+        
         <div className={styles.searchContainer}>
-          <input
-            type="text"
-            placeholder="Search products..."
-            className={styles.searchBar}
-            value={searchTerm}
-            onChange={handleSearch}
-            onMouseEnter={() => speakText("Search products by name")} // Announce on hover
-            onFocus={() => speakText("Search products by name")} // Announce on focus
-            aria-label="Search products by name" // Accessible name for screen readers
+        <input
+          type="text"
+          placeholder="Search products..."
+          className={styles.searchBar}
+          value={searchTerm}
+          onChange={handleSearch}
+          aria-label="Search products by name"
+          onMouseEnter={() => speakText("search bar for products search")}
+          onMouseLeave={() => synthRef.current.cancel()} // Stop speech when leaving search bar
+        />
+
+          <HiMicrophone
+            className={styles.microphoneIcon}
+            size={20}
+            onClick={startVoiceSearch}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") startVoiceSearch(); }}
+            tabIndex={0}
+            aria-label="Start voice search"
+            onMouseEnter={() => speakText("Click here to search products")}
           />
         </div>
-        <Link
-          to="/"
-          className={styles.homeButton}
-          onMouseEnter={() => announceButton("Home")}
-          onFocus={() => announceButton("Home")}
-        >
-          <IoHome size={24} /> Home
-        </Link>
-        <Link
-          to="/cart"
-          className={styles.cartButton}
-          onMouseEnter={() => announceButton("Cart")}
-          onFocus={() => announceButton("Cart")}
-        >
-          <TiShoppingCart size={24} /> Cart
-        </Link>
+
+        <Link to="/" className={styles.homeButton} onMouseEnter={() => speakText("click to navigate to home")}><IoHome size={24} /> Home</Link>
+        <Link to="/cart" className={styles.cartButton} onMouseEnter={() => speakText(" click to view your cart")}><TiShoppingCart size={24} /> Cart</Link>
       </div>
 
       <div className={styles.productsDisp}>
         <div className={styles.productGrid}>
           {filteredProducts.length > 0 ? (
             filteredProducts.map((product) => (
-              <div
-                key={product.id}
-                className={styles.productCard}
-                onMouseEnter={() => announceProductDetails(product)}
-                aria-label={`${product.name}, Price: ${product.price}, Category: ${product.category}, Description: ${product.description}`}
-              >
-                <img
-                  src={product.image}
-                  alt={product.name}
-                  className={styles.productImage}
-                />
+              <div key={product.id} className={styles.productCard} onMouseEnter={() => speakText(`${product.name}, Price: ${product.price}, Category: ${product.category}, Description: ${product.description}`)}>
+                <img src={product.image} alt={product.name} className={styles.productImage} />
                 <h3>{product.name}</h3>
                 <p className={styles.category}>Category: {product.category}</p>
                 <p className={styles.price}>{product.price}</p>
-                <button
-                  className={styles.addToCart}
-                  tabIndex={0}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      // Handle add to cart logic
-                    }
-                  }}
-                >
-                  Add to Cart
-                </button>
+                <button className={styles.addToCart} onMouseEnter={() => speakText("Add to cart")}>Add to Cart</button>
               </div>
             ))
           ) : (
-            <p className={styles.noResults}>No products found.</p>
+            <p className={styles.noResults} aria-live="polite">No products found.</p>
           )}
         </div>
       </div>
