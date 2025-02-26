@@ -9,7 +9,7 @@ import {
 import Home from './home/Home';
 import Login from './login/Login';
 import Products from './products/Products';
-import Signup from './signup/signup';
+import Signup from './signup/Signup';
 import Cart from './cart/Cart';
 
 const router = createBrowserRouter([

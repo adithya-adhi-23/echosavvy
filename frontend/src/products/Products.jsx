@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom"; // Add useNavigate here
 import { TiShoppingCart } from "react-icons/ti";
-import { IoHome } from "react-icons/io5"; 
+import { IoHome } from "react-icons/io5";
 import { HiMicrophone } from "react-icons/hi2";
 import styles from "./Products.module.css";
+import axios from "axios";
 
 const products = [
   { id: 1, name: "Smartphone", category: "Mobile Phones", price: "$699.99", description: "Latest model with high-resolution camera and fast processor.", image: "/image/phone.png" },
@@ -31,8 +32,10 @@ const Products = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredProducts, setFilteredProducts] = useState(products);
   const [isListening, setIsListening] = useState(false);
+  const [user_id, setUserId] = useState(localStorage.getItem("user_id"));
   const synthRef = useRef(window.speechSynthesis);
   const recognitionRef = useRef(null);
+  const navigate = useNavigate(); // Use the hook here
 
   useEffect(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -46,15 +49,14 @@ const Products = () => {
     } else {
       console.warn("Speech recognition not supported.");
     }
-  
+
     synthRef.current.onvoiceschanged = () => synthRef.current.getVoices();
-  
+
     return () => {
       if (recognitionRef.current) recognitionRef.current.stop();
-      if (synthRef.current) synthRef.current.cancel(); // Stop ongoing speech when unmounting
+      if (synthRef.current) synthRef.current.cancel();
     };
   }, []);
-  
 
   const handleSpeechResult = (event) => {
     const transcript = event.results[0][0].transcript;
@@ -70,13 +72,12 @@ const Products = () => {
 
   const startVoiceSearch = () => {
     if (recognitionRef.current) {
-      synthRef.current.cancel(); // Stop any ongoing speech before starting recognition
+      synthRef.current.cancel();
       recognitionRef.current.start();
       setIsListening(true);
       speakText("Listening...");
     }
   };
-  
 
   const speakText = (text) => {
     if (!synthRef.current) return;
@@ -88,28 +89,91 @@ const Products = () => {
     synthRef.current.speak(utterance);
   };
 
+  const stopSpeech = () => {
+    if (synthRef.current) {
+      synthRef.current.cancel();
+    }
+  };
+
   const handleSearch = (e) => {
     const value = e.target.value.toLowerCase();
     setSearchTerm(value);
     setFilteredProducts(value ? products.filter(p => p.name.toLowerCase().includes(value)) : products);
   };
 
+  const addToCart = async (product) => {
+    const token = localStorage.getItem("token");
+    const user_id = localStorage.getItem("user_id");
+
+    if (!token || !user_id) {
+      alert("Please log in first!");
+      return;
+    }
+
+    try {
+      const response = await axios.post("http://localhost:8082/cart/add", {
+        user_id,
+        product_id: product.id,
+        product_name: product.name,
+        price: parseFloat(product.price.replace("$", "")),
+        quantity: 1,
+        image_url: product.image,
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      console.log("✅ Added to cart:", response.data);
+      alert("Added to cart successfully!");
+    } catch (error) {
+      console.error("❌ Error adding to cart:", error.response?.data || error.message);
+      alert("Failed to add to cart. Check the console for details.");
+    }
+  };
+
+  const handleLogin = async (username, password) => {
+    try {
+      const response = await axios.post("http://localhost:8082/login", { username, password });
+
+      if (response.data.success) {
+        localStorage.setItem("token", response.data.token);
+        localStorage.setItem("user_id", response.data.user_id);
+        setUserId(response.data.user_id); // Update the state to reflect the logged-in user
+        alert("Login successful!");
+      } else {
+        alert(response.data.message);
+      }
+    } catch (error) {
+      console.error("❌ Login error:", error.response?.data || error.message);
+      alert("Login failed. Check credentials and try again.");
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user_id");
+    setUserId(null); // Update the state to reflect the logged-out user
+    alert("Logged out successfully!");
+    navigate("/"); // Redirect to the home page
+  };
+
   return (
     <main className={styles.productDisplay}>
       <div className={styles.topBar}>
-        <h1 className={styles.platformName} onMouseEnter={() => speakText("Welcome to EchoSavvy products page")}>Echosavvy</h1>
-        
+        <h1 className={styles.platformName} onMouseEnter={() => speakText("Welcome to EchoSavvy products page")}>
+          Echosavvy
+        </h1>
+
         <div className={styles.searchContainer}>
-        <input
-          type="text"
-          placeholder="Search products..."
-          className={styles.searchBar}
-          value={searchTerm}
-          onChange={handleSearch}
-          aria-label="Search products by name"
-          onMouseEnter={() => speakText("search bar for products search")}
-          onMouseLeave={() => synthRef.current.cancel()} // Stop speech when leaving search bar
-        />
+          <input
+            type="text"
+            placeholder="Search products..."
+            className={styles.searchBar}
+            value={searchTerm}
+            onChange={handleSearch}
+            aria-label="Search products by name"
+            onMouseEnter={() => speakText("Search bar for products search")}
+            onMouseLeave={stopSpeech}
+          />
 
           <HiMicrophone
             className={styles.microphoneIcon}
@@ -119,23 +183,52 @@ const Products = () => {
             tabIndex={0}
             aria-label="Start voice search"
             onMouseEnter={() => speakText("Click here to search products")}
+            onMouseLeave={stopSpeech}
           />
         </div>
 
-        <Link to="/" className={styles.homeButton} onMouseEnter={() => speakText("click to navigate to home")}><IoHome size={24} /> Home</Link>
-        <Link to="/cart" className={styles.cartButton} onMouseEnter={() => speakText(" click to view your cart")}><TiShoppingCart size={24} /> Cart</Link>
+        <Link to="/" className={styles.homeButton} onMouseEnter={() => speakText("Click to navigate to home")}>
+          <IoHome size={24} /> Home
+        </Link>
+
+        {user_id ? (
+          <>
+            <Link to={`/cart/${user_id}`} className={styles.cartButton}>
+              <TiShoppingCart size={24} /> Cart
+            </Link>
+            <button className={styles.logoutButton} onClick={handleLogout}>
+              Logout
+            </button>
+          </>
+        ) : (
+          <button className={styles.cartButton} onClick={() => alert("Please log in first!")}>
+            <TiShoppingCart size={24} /> Cart
+          </button>
+        )}
       </div>
 
       <div className={styles.productsDisp}>
-        <div className={styles.productGrid}>
+        <div className={styles.productGrid} onMouseLeave={stopSpeech}>
           {filteredProducts.length > 0 ? (
             filteredProducts.map((product) => (
-              <div key={product.id} className={styles.productCard} onMouseEnter={() => speakText(`${product.name}, Price: ${product.price}, Category: ${product.category}, Description: ${product.description}`)}>
+              <div
+                key={product.id}
+                className={styles.productCard}
+                onMouseEnter={() => speakText(`${product.name}, Price: ${product.price}, Category: ${product.category}, Description: ${product.description}`)}
+                onMouseLeave={stopSpeech}
+              >
                 <img src={product.image} alt={product.name} className={styles.productImage} />
                 <h3>{product.name}</h3>
                 <p className={styles.category}>Category: {product.category}</p>
                 <p className={styles.price}>{product.price}</p>
-                <button className={styles.addToCart} onMouseEnter={() => speakText("Add to cart")}>Add to Cart</button>
+                <button
+                  className={styles.addToCart}
+                  onClick={() => addToCart(product)}
+                  onMouseEnter={() => speakText("Add to cart")}
+                  onMouseLeave={stopSpeech}
+                >
+                  Add to Cart
+                </button>
               </div>
             ))
           ) : (

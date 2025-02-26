@@ -1,8 +1,13 @@
 const express = require('express');
 const mysql = require('mysql2');
 const cors = require('cors');
+const bcrypt = require('bcrypt'); // For password hashing
+const jwt = require('jsonwebtoken'); // For authentication
+const dotenv = require('dotenv');
 
+dotenv.config();
 const app = express();
+const SECRET_KEY = process.env.SECRET_KEY || "your_secret_key";
 
 const corsOptions = {
     origin: ['http://localhost:5173', 'http://localhost:5174'],
@@ -21,72 +26,51 @@ const db = mysql.createConnection({
 
 db.connect((err) => {
     if (err) {
-        console.error("❌ Error connecting to MySQL:", err);
+        console.error("Error connecting to MySQL:", err);
         return;
     }
-    console.log("✅ Connected to MySQL");
+    console.log("Connected to MySQL");
 });
 
-// ✅ Default Routes
-app.get('/', (req, res) => res.send("BACKEND API"));
-app.get('/signup', (req, res) => res.send("BACKEND API"));
-app.get('/profile', (req, res) => res.send("BACKEND API"));
-app.get('/login', (req, res) => res.send("BACKEND API"));
-
-// ✅ Fetch All Products
-app.get('/products', (req, res) => {
-    const sql = "SELECT * FROM products";
-    db.query(sql, (err, results) => {
-        if (err) {
-            console.error("❌ Error fetching products:", err);
-            return res.status(500).json({ message: "Database error", error: err });
-        }
-        res.json(results);
-    });
-});
-
-// ✅ User Signup
-app.post('/signup', (req, res) => {
-    console.log("📥 Received signup request:", req.body);
-
+// User Signup (Now using bcrypt)
+app.post('/signup', async (req, res) => {
     const { username, phone, password } = req.body;
 
     if (!username || !phone || !password) {
-        return res.status(400).json({ message: "⚠️ All fields are required" });
+        return res.status(400).json({ message: "All fields are required" });
     }
 
-    const checkSql = "SELECT * FROM users WHERE username = ?";
-    db.query(checkSql, [username], (err, results) => {
-        if (err) {
-            console.error("❌ Database error:", err);
-            return res.status(500).json({ message: "Database error", error: err });
-        }
-        if (results.length > 0) {
-            return res.status(400).json({ message: "⚠️ Username already exists. Try another one." });
-        }
+    try {
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const checkSql = "SELECT * FROM users WHERE username = ?";
+        db.query(checkSql, [username], (err, results) => {
+            if (err) return res.status(500).json({ message: "Database error", error: err });
 
-        const insertSql = "INSERT INTO users (username, phone, password) VALUES (?, ?, ?)";
-        db.query(insertSql, [username, phone, password], (err, result) => {
-            if (err) {
-                console.error("❌ Insert error:", err);
-                return res.status(500).json({ message: "Database error", error: err });
+            if (results.length > 0) {
+                return res.status(400).json({ message: "Username already exists" });
             }
-            console.log("✅ User registered successfully:", { id: result.insertId, username, phone });
-            return res.json({ message: "✅ User registered successfully" });
+
+            const insertSql = "INSERT INTO users (username, phone, password) VALUES (?, ?, ?)";
+            db.query(insertSql, [username, phone, hashedPassword], (err, result) => {
+                if (err) return res.status(500).json({ message: "Database error", error: err });
+
+                return res.json({ message: "User registered successfully" });
+            });
         });
-    });
+    } catch (error) {
+        return res.status(500).json({ message: "Internal server error", error });
+    }
 });
 
-// ✅ User Login
-app.post('/login', (req, res) => {
+app.post('/login', async (req, res) => {
     const { username, password } = req.body;
 
     if (!username || !password) {
         return res.status(400).json({ message: "⚠️ Username and password are required" });
     }
 
-    const sql = 'SELECT * FROM users WHERE username = ? AND password = ?';
-    db.query(sql, [username, password], (err, results) => {
+    const sql = 'SELECT * FROM users WHERE username = ?';
+    db.query(sql, [username], async (err, results) => {
         if (err) {
             console.error("❌ Login error:", err);
             return res.status(500).json({ message: "An error occurred while logging in" });
@@ -94,85 +78,49 @@ app.post('/login', (req, res) => {
 
         if (results.length > 0) {
             const user = results[0];
-            return res.json({ success: true, user: { id: user.id, username: user.username } });
+            const validPassword = await bcrypt.compare(password, user.password);
+
+            if (validPassword) {
+                const token = jwt.sign({ id: user.id, username: user.username }, SECRET_KEY, { expiresIn: '1h' });
+                return res.json({ success: true, token, user_id: user.id });
+            } else {
+                return res.status(401).json({ message: "❌ Invalid username or password" });
+            }
         } else {
             return res.status(401).json({ message: "❌ Invalid username or password" });
         }
     });
 });
 
-// ✅ Add to Cart (No Admin Panel)
-app.post('/add-to-cart', (req, res) => {
-    const { user_id, product_id, name, price, image } = req.body;
+app.post('/cart/add', async (req, res) => {
+    const token = req.headers.authorization?.split(" ")[1];
 
-    if (!user_id || !product_id || !name || !price || !image) {
-        return res.status(400).json({ message: "⚠️ All fields are required" });
+    if (!token) {
+        return res.status(401).json({ message: "Unauthorized" });
     }
 
-    const sql = 'INSERT INTO cart (user_id, product_id, name, price, image) VALUES (?, ?, ?, ?, ?)';
-    db.query(sql, [user_id, product_id, name, price, image], (err, result) => {
-        if (err) {
-            console.error("❌ Error adding to cart:", err);
-            return res.status(500).json({ message: "Database error", error: err });
+    try {
+        const decoded = jwt.verify(token, SECRET_KEY);
+        const { user_id, product_id, product_name, price, quantity, image_url } = req.body;
+
+        if (!user_id || !product_id || !product_name || !price || !quantity || !image_url) {
+            return res.status(400).json({ message: "All fields are required" });
         }
-        return res.json({ message: "✅ Product added to cart successfully" });
-    });
-});
 
-// ✅ Fetch Cart Items for User
-app.get('/cart/:user_id', (req, res) => {
-    const { user_id } = req.params;
+        const total_amount = price * quantity;
 
-    if (!user_id) {
-        return res.status(400).json({ message: "⚠️ User ID is required" });
+        await db.promise().query(
+            "INSERT INTO cart (user_id, product_id, product_name, price, quantity, image_url, total_amount) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            [user_id, product_id, product_name, price, quantity, image_url, total_amount]
+        );
+
+        res.status(200).json({ message: "Added to cart successfully" });
+
+    } catch (error) {
+        console.error("Database error:", error);
+        res.status(500).json({ message: "Database error", error: error.message });
     }
-
-    const sql = "SELECT * FROM cart WHERE user_id = ?";
-    db.query(sql, [user_id], (err, results) => {
-        if (err) {
-            console.error("❌ Error fetching cart:", err);
-            return res.status(500).json({ message: "Database error", error: err });
-        }
-        res.json(results);
-    });
 });
-
-// ✅ Remove Item from Cart
-app.delete('/cart/:user_id/:product_id', (req, res) => {
-    const { user_id, product_id } = req.params;
-
-    if (!user_id || !product_id) {
-        return res.status(400).json({ message: "⚠️ User ID and Product ID are required" });
-    }
-
-    const sql = "DELETE FROM cart WHERE user_id = ? AND product_id = ?";
-    db.query(sql, [user_id, product_id], (err, result) => {
-        if (err) {
-            console.error("❌ Error removing from cart:", err);
-            return res.status(500).json({ message: "Database error", error: err });
-        }
-        return res.json({ message: "✅ Product removed from cart" });
-    });
-});
-
-// ✅ Clear Cart for User
-app.delete('/cart/:user_id', (req, res) => {
-    const { user_id } = req.params;
-
-    if (!user_id) {
-        return res.status(400).json({ message: "⚠️ User ID is required" });
-    }
-
-    const sql = "DELETE FROM cart WHERE user_id = ?";
-    db.query(sql, [user_id], (err, result) => {
-        if (err) {
-            console.error("❌ Error clearing cart:", err);
-            return res.status(500).json({ message: "Database error", error: err });
-        }
-        return res.json({ message: "✅ Cart cleared successfully" });
-    });
-});
-
 app.listen(8082, () => {
     console.log("🚀 Server is running on http://localhost:8082");
 });

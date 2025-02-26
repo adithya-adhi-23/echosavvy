@@ -10,7 +10,7 @@ const Signup = () => {
   const recognitionRef = useRef(null);
   const navigate = useNavigate();
 
-  // Initialize Speech Recognition
+
   useEffect(() => {
     if ('webkitSpeechRecognition' in window) {
       const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
@@ -50,7 +50,7 @@ const Signup = () => {
     };
   }, [currentField]);
 
-  // Text-to-Speech (TTS) function
+  
   const speakText = (text) => {
     if ('speechSynthesis' in window) {
       const utterance = new SpeechSynthesisUtterance(text);
@@ -70,7 +70,7 @@ const Signup = () => {
     }
   };
   
-  // Handle field focus
+ 
   const handleFieldFocus = (field, message) => {
     setCurrentField(field);
 
@@ -82,7 +82,7 @@ const Signup = () => {
     speakText(message);
   };
 
-  // Handle mouse hover for TTS
+  
   const handleMouseHover = (message) => {
     speakText(message);
   };
@@ -90,16 +90,15 @@ const Signup = () => {
   const registerUser = async () => {
     console.log("📤 Sending signup request with data:", userData);
 
-    // Remove spaces from all inputs
     const trimmedUserData = {
-      username: userData.username.trim(),  // FIXED: Corrected field name
-      phone: userData.phone.replace(/\s+/g, ''), // Remove spaces from phone
-      password: userData.password.replace(/\s+/g, '') // Remove spaces from password
+      username: userData.username.trim(),  
+      phone: userData.phone.replace(/\s+/g, ''), 
+      password: userData.password.replace(/\s+/g, '') 
     };
 
     console.log("🚀 Processed User Data:", JSON.stringify(trimmedUserData, null, 2));
 
-    // Ensure all fields are filled after trimming
+    
     if (!trimmedUserData.username || !trimmedUserData.phone || !trimmedUserData.password) {
       console.error("❌ Missing Fields:", trimmedUserData);
       setErrorMessage('All fields are required.');
@@ -182,6 +181,7 @@ const Signup = () => {
           onClick={registerUser}
           onFocus={() => handleMouseHover('Press this button to sign up.')}
           onMouseEnter={() => handleMouseHover('Press this button to sign up.')}
+          onMouseLeave={() => synthRef.current.cancel()}
         >
           Signup
         </button>
@@ -190,6 +190,7 @@ const Signup = () => {
           to="/login"
           onFocus={() => handleMouseHover('Navigate to login page.')}
           onMouseEnter={() => handleMouseHover('Navigate to login page.')}
+          onMouseLeave={() => synthRef.current.cancel()}
         >
           <p className={styles.link}>Already Have An Account? Login now!</p>
         </Link>
