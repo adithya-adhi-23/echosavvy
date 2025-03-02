@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Link, useNavigate } from "react-router-dom"; // Add useNavigate here
+import { Link, useNavigate } from "react-router-dom"; 
 import { TiShoppingCart } from "react-icons/ti";
 import { IoHome } from "react-icons/io5";
 import { HiMicrophone } from "react-icons/hi2";
 import styles from "./Products.module.css";
 import axios from "axios";
+import { useCart } from '../cart/CartContext'; // Correct path
 
 const products = [
   { id: 1, name: "Smartphone", category: "Mobile Phones", price: "$699.99", description: "Latest model with high-resolution camera and fast processor.", image: "/image/phone.png" },
@@ -35,7 +36,8 @@ const Products = () => {
   const [user_id, setUserId] = useState(localStorage.getItem("user_id"));
   const synthRef = useRef(window.speechSynthesis);
   const recognitionRef = useRef(null);
-  const navigate = useNavigate(); // Use the hook here
+  const navigate = useNavigate();
+  const { addToCart } = useCart(); // Use the addToCart function from CartContext
 
   useEffect(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -101,32 +103,45 @@ const Products = () => {
     setFilteredProducts(value ? products.filter(p => p.name.toLowerCase().includes(value)) : products);
   };
 
-  const addToCart = async (product) => {
+  const handleAddToCart = async (product) => {
     const token = localStorage.getItem("token");
     const user_id = localStorage.getItem("user_id");
 
     if (!token || !user_id) {
-      alert("Please log in first!");
-      return;
-    }
+      // For guest users, store cart items in localStorage
+      const guestCart = JSON.parse(localStorage.getItem("guestCart")) || [];
+      const existingItem = guestCart.find((item) => item.product_id === product.id);
 
-    try {
-      const response = await axios.post("http://localhost:8082/cart/add", {
-        user_id,
-        product_id: product.id,
-        product_name: product.name,
-        price: parseFloat(product.price.replace("$", "")),
-        quantity: 1,
-        image_url: product.image,
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      if (existingItem) {
+        existingItem.quantity += 1; // Increase quantity if item already exists
+      } else {
+        guestCart.push({
+          product_id: product.id,
+          product_name: product.name,
+          price: parseFloat(product.price.replace("$", "")),
+          quantity: 1,
+          image_url: product.image,
+        });
+      }
 
-      console.log("✅ Added to cart:", response.data);
+      localStorage.setItem("guestCart", JSON.stringify(guestCart));
       alert("Added to cart successfully!");
-    } catch (error) {
-      console.error("❌ Error adding to cart:", error.response?.data || error.message);
-      alert("Failed to add to cart. Check the console for details.");
+    } else {
+      // For logged-in users, add to cart via API
+      try {
+        await addToCart({
+          user_id,
+          product_id: product.id,
+          product_name: product.name,
+          price: parseFloat(product.price.replace("$", "")),
+          quantity: 1,
+          image_url: product.image,
+        });
+        alert("Added to cart successfully!");
+      } catch (error) {
+        console.error("❌ Error adding to cart:", error);
+        alert("Failed to add to cart. Check the console for details.");
+      }
     }
   };
 
@@ -138,6 +153,23 @@ const Products = () => {
         localStorage.setItem("token", response.data.token);
         localStorage.setItem("user_id", response.data.user_id);
         setUserId(response.data.user_id); // Update the state to reflect the logged-in user
+
+        // Sync guest cart with user cart on login
+        const guestCart = JSON.parse(localStorage.getItem("guestCart")) || [];
+        if (guestCart.length > 0) {
+          for (const item of guestCart) {
+            await addToCart({
+              user_id: response.data.user_id,
+              product_id: item.product_id,
+              product_name: item.product_name,
+              price: item.price,
+              quantity: item.quantity,
+              image_url: item.image_url,
+            });
+          }
+          localStorage.removeItem("guestCart"); // Clear guest cart after syncing
+        }
+
         alert("Login successful!");
       } else {
         alert(response.data.message);
@@ -187,10 +219,6 @@ const Products = () => {
           />
         </div>
 
-        <Link to="/" className={styles.homeButton} onMouseEnter={() => speakText("Click to navigate to home")}>
-          <IoHome size={24} /> Home
-        </Link>
-
         {user_id ? (
           <>
             <Link to={`/cart/${user_id}`} className={styles.cartButton}>
@@ -201,9 +229,9 @@ const Products = () => {
             </button>
           </>
         ) : (
-          <button className={styles.cartButton} onClick={() => alert("Please log in first!")}>
+          <Link to="/cart" className={styles.cartButton}>
             <TiShoppingCart size={24} /> Cart
-          </button>
+          </Link>
         )}
       </div>
 
@@ -223,7 +251,7 @@ const Products = () => {
                 <p className={styles.price}>{product.price}</p>
                 <button
                   className={styles.addToCart}
-                  onClick={() => addToCart(product)}
+                  onClick={() => handleAddToCart(product)}
                   onMouseEnter={() => speakText("Add to cart")}
                   onMouseLeave={stopSpeech}
                 >
@@ -232,7 +260,9 @@ const Products = () => {
               </div>
             ))
           ) : (
-            <p className={styles.noResults} aria-live="polite">No products found.</p>
+            <p className={styles.noResults} aria-live="polite" onMouseEnter={() => speakText("Sorry, no products found.")}>
+              No products found.
+            </p>
           )}
         </div>
       </div>

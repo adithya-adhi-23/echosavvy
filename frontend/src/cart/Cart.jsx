@@ -1,42 +1,44 @@
-import { useEffect, useState } from "react";
-import axios from "axios";
-import { useParams } from "react-router-dom";
+import React, { useEffect } from 'react';
+import { useCart } from './CartContext';
+import CartItems from './CartItems';
+import styles from './Cart.module.css';
 
 const Cart = () => {
-    const { user_id } = useParams();
-    const [cartItems, setCartItems] = useState([]);
+  const { cartItems, fetchCartItems } = useCart();
+  const user_id = localStorage.getItem('user_id');
 
-    useEffect(() => {
-        const fetchCartItems = async () => {
-            try {
-                const response = await axios.get(`http://localhost:8082/cart/${user_id}`);
-                setCartItems(response.data);
-            } catch (error) {
-                console.error("❌ Error fetching cart:", error);
-            }
-        };
+  useEffect(() => {
+    fetchCartItems(user_id);
+  }, [user_id]);
 
-        fetchCartItems();
-    }, [user_id]);
+  const calculateTotal = () => {
+    return cartItems.reduce((total, item) => total + item.price * item.quantity, 0).toFixed(2);
+  };
 
-    return (
-        <div>
-            <h2>🛒 Your Cart</h2>
-            {cartItems.length === 0 ? (
-                <p>Cart is empty</p>
-            ) : (
-                cartItems.map(item => (
-                    <div key={item.id}>
-                        <img src={item.image_url} alt={item.product_name} width="100" />
-                        <p>{item.product_name}</p>
-                        <p>Price: ₹{item.price}</p>
-                        <p>Quantity: {item.quantity}</p>
-                        <p>Total: ₹{item.total_amount}</p>
-                    </div>
-                ))
-            )}
+  return (
+    <div className={styles.cartPage}>
+      <h2>🛒 Your Cart</h2>
+      {cartItems.length === 0 ? (
+        <p className={styles.noResults}>Your cart is empty.</p>
+      ) : (
+        <div className={styles.cartItems}>
+          {cartItems.map((item) => (
+            <CartItems
+              key={item.product_id}
+              item={item}
+              onRemove={() => removeItem(item.product_id)}
+              onIncrease={() => increaseAmount(item.product_id)}
+              onDecrease={() => decreaseAmount(item.product_id)}
+            />
+          ))}
+          <div className={styles.cartTotal}>
+            <h3>Total: ₹{calculateTotal()}</h3>
+            <button className={styles.checkoutButton}>Proceed to Checkout</button>
+          </div>
         </div>
-    );
+      )}
+    </div>
+  );
 };
 
 export default Cart;

@@ -121,6 +121,72 @@ app.post('/cart/add', async (req, res) => {
         res.status(500).json({ message: "Database error", error: error.message });
     }
 });
+app.get('/cart/:user_id', async (req, res) => {
+    const token = req.headers.authorization?.split(" ")[1];
+
+    if (!token) {
+        return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    try {
+        const decoded = jwt.verify(token, SECRET_KEY);
+        const user_id = req.params.user_id;
+
+        const [results] = await db.promise().query(
+            "SELECT * FROM cart WHERE user_id = ?",
+            [user_id]
+        );
+
+        res.status(200).json(results);
+    } catch (error) {
+        console.error("Error fetching cart items:", error);
+        res.status(500).json({ message: "Database error", error: error.message });
+    }
+});
+app.delete('/cart/remove', async (req, res) => {
+    const token = req.headers.authorization?.split(" ")[1];
+
+    if (!token) {
+        return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    try {
+        const decoded = jwt.verify(token, SECRET_KEY);
+        const { user_id, product_id } = req.body;
+
+        await db.promise().query(
+            "DELETE FROM cart WHERE user_id = ? AND product_id = ?",
+            [user_id, product_id]
+        );
+
+        res.status(200).json({ message: "Item removed from cart" });
+    } catch (error) {
+        console.error("Error removing item from cart:", error);
+        res.status(500).json({ message: "Database error", error: error.message });
+    }
+});
+app.put('/cart/update', async (req, res) => {
+    const token = req.headers.authorization?.split(" ")[1];
+
+    if (!token) {
+        return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    try {
+        const decoded = jwt.verify(token, SECRET_KEY);
+        const { user_id, product_id, quantity } = req.body;
+
+        const [results] = await db.promise().query(
+            "UPDATE cart SET quantity = ?, total_amount = price * ? WHERE user_id = ? AND product_id = ?",
+            [quantity, quantity, user_id, product_id]
+        );
+
+        res.status(200).json({ message: "Cart updated successfully" });
+    } catch (error) {
+        console.error("Error updating cart:", error);
+        res.status(500).json({ message: "Database error", error: error.message });
+    }
+});
 app.listen(8082, () => {
     console.log("🚀 Server is running on http://localhost:8082");
 });
