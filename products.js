@@ -1,4 +1,4 @@
-// Fetch and display all products
+
 window.onload = function() {
     fetch('http://localhost/ecommerce/api.php')
         .then(response => response.json())
@@ -20,7 +20,7 @@ window.onload = function() {
         .catch(error => console.error('Error:', error));
 };
 
-// Search function to filter products by name
+
 function searchProducts() {
     const query = document.getElementById('searchBox').value.toLowerCase();
     const products = document.getElementsByClassName('product');
@@ -34,7 +34,7 @@ function searchProducts() {
         }
     });
 }
-// Assuming products are already fetched and displayed
+
 data.forEach(product => {
     const productDiv = document.createElement('div');
     productDiv.classList.add('product');

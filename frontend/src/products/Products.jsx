@@ -125,7 +125,7 @@ const Products = () => {
       }
   
       localStorage.setItem("guestCart", JSON.stringify(guestCart));
-      console.log("Guest cart updated:", guestCart); // Debugging
+      console.log("Guest cart updated:", guestCart); 
       speakText("Added to cart successfully!");
     } else {
  
