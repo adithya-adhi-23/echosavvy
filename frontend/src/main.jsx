@@ -1,17 +1,14 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import {
-  createBrowserRouter,
-  RouterProvider,
-} from 'react-router-dom';
+import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import Home from './home/Home';
 import Login from './login/Login';
 import Products from './products/Products';
 import Signup from './signup/Signup';
 import Cart from './cart/Cart';
-import { CartProvider } from './cart/CartContext'; // Correct import path
+import Checkout from './checkout/Checkout'; 
+import { CartProvider } from './cart/CartContext';
 
-// Define your routes
 const router = createBrowserRouter([
   {
     path: '/',
@@ -33,16 +30,18 @@ const router = createBrowserRouter([
     path: '/cart',
     element: <Cart />,
   },
+  {
+    path: '/checkout',
+    element: <Checkout />, 
+  },
 ]);
 
-// Wrap the RouterProvider with CartProvider
 const Root = () => (
   <CartProvider>
     <RouterProvider router={router} />
   </CartProvider>
 );
 
-// Render the Root component
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <Root />
