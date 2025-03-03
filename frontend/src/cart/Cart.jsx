@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { useCart } from "./CartContext";
 import { useNavigate } from "react-router-dom";
 import styles from "./Cart.module.css";
-import CartItems from "./CartItems";
+
 
 const speakText = (text) => {
   if ("speechSynthesis" in window) {
